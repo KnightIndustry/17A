@@ -1,0 +1,30 @@
+Nginx缓存策略设置
+
+ 
+
+HTTP头处理模块(HTTP Headers)，这个模块允许设置任意的HTTP头 
+
+    1) add_header
+
+    语法：add_header name value 
+
+    默认值：none 
+
+    使用字段：http, server, location 
+
+    2) expires
+
+    语法：expires [time|epoch|max|off] 
+
+    默认值：expires off 
+
+    使用字段：http, server, location  
+
+    这个指令控制是否在应答中标记一个过期时间，如果是，如何标记。
+
+    off 将禁止修改头部中的 Expires和Cache-Control字段。
+
+    Time控制“Cache-Control”的值，负数表示no-cache
+	
+	
+https://help.aliyun.com/knowledge_detail/40077.html

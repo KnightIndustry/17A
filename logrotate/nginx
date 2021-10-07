@@ -1,0 +1,20 @@
+/usr/local/nginx/logs/*/*.log 
+
+{
+  daily
+  compress
+  delaycompress
+  rotate 4
+  minsize 1M
+  maxage 90
+  notifempty
+  missingok
+  create
+  dateext 
+  dateyesterday
+  sharedscripts
+  postrotate
+    test ! -f /usr/local/nginx/logs/nginx.pid || kill -USR1 `cat /usr/local/nginx/logs/nginx.pid`
+  endscript
+}
+

@@ -1,0 +1,26 @@
+https://github.com/KnightIndustry/ansible_template.git
+
+echo "# ansible_template" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git remote set-url origin git@github.com:KnightIndustry/ansible_template.git
+git remote add origin https://github.com/KnightIndustry/ansible_template.git
+git push -u origin master
+
+
+git   reset --hard     21f69e2cc9a07
+#撤消提交
+
+git push --force 
+#强制提交，用户撤消已经 push 的提交
+
+git config --global user.name "Jianglw"
+git config --global user.email jiang.sd@139.com
+
+
+
+########################
+git clone -b release-2.15  https://github.com/kubernetes-sigs/kubespray.git
+
+

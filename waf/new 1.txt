@@ -1,0 +1,27 @@
+/api/Upload/upload_base64_paycode
+unique_id "1595891912"
+
+# Disable ModSecurity for a given page - NOTE THE ESCAPE OF THE '?'
+SecRule REQUEST_URI "/api/Upload/upload_base64_paycode" "allow,id:3"
+
+2. Use DigitalOcean API (native)
+You need to obtain a read and write capable API key from your DigitalOcean account. See: https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2
+
+Replace with the correct access token you got from DigitalOcean:
+
+$ export DO_API_KEY="75310dc4ca... ..."
+3. Issue Cert with wilcard domain:
+$ acme.sh --issue --dns dns_dgon -d example.com -d *.example.com
+Your cert locations:
+
+Your cert is in /home/user/.acme.sh/example.com/example.com.cer
+Your cert key is in /home/user/.acme.sh/example.com/example.com.key
+The intermediate CA cert is in /home/user/.acme.sh/example.com/ca.cer
+And the full chain certs is there: /home/user/.acme.sh/example.com/fullchain.cer
+
+
+acme.sh --renew -d example.com --force
+
+37 0 * * * "/root/.acme.sh"/acme.sh --cron --home "/root/.acme.sh" > /dev/null
+
+openssl dhparam -out /usr/local/nginx/conf/cert/dhparam.pem 2048

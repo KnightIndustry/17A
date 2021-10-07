@@ -1,0 +1,7 @@
+drop procedure if exist $;
+
+SQL SECURITY INVOKER
+
+
+
+GRANT EXECUTE ON FUNCTION `game_center`.`getnewdevicenum` TO 'GameCenter'@'172.1.1.%'

@@ -1,0 +1,31 @@
+Some TCP⁄IP users require a keep alive function with better timing granularity (in seconds) than that provided by the existing SO_KeepAlive socket option, which uses a stack-wide time value provided by configuration data.
+
+The Posix.1g standard defines an alternative keep alive function, TCP_KeepAlive, which provides a value in seconds that is specific to a particular socket.
+
+The value of TCP_KeepAlive, which is used for the current connection in place of the configuration default keep alive time (when keep alive timing is made active by the SO_KeepAlive socket option), can be in the range 1 – 2 147 460 seconds. If a value greater than 2 147 460 is specified, 2 147 460 is used. If the TCP_KeepAlive value 0 is specified for a specific socket, keep alive timing for that socket is disabled.
+SetSockOpt for TCP_KeepAlive
+Specifies a socket-specific timer value that remains in effect until it is respecified by the SetSockOpt option or until the socket is closed. Timeout values in the range 1 – 2 147 460 seconds (or 0) are valid for TCP_KeepAlive. If a value larger than the allowed range is specified, the value 2 147 460 seconds is used.
+GetSockOpt for TCP_Keepalive
+Returns the specific timer value (in seconds) that is in effect for the given socket, or the value 0 if keep alive timing is not active.
+Unlike the algorithm that is used to issue probes during an SO_KeepAlive cycle, the TCP_KeepAlive function varies the number of probes that are issued before terminating the connection. Probe retry intervals are scaled in proportion to the interval specified, as shown in Table 1.
+
+Table 1. TCP_KeepAlive time values
+TCP_KeepAlive time (T) specified in seconds	Seconds to first probe	Number of probes	Probe interval	Maximum interval
+T = 0 (KeepAlive Disabled)	n/a	n/a	n/a	n/a
+0 < T <= 5	T	1	1	T + 1
+5 < T <= 10	T	1	2	T + 2
+10 < T <= 30	T	1	5	T + 5
+30 < T <= 60	T	1	10	T + 10
+60 < T <= 120	T	1	20	T + 20
+120 < T <= 300	T	2	20	T + 40
+300 < T <= 600	T	2	30	T + 160
+600 < T <= 1800	T	5	30	T + 150
+1800 < T <= 3600	T	5	60	T + 300
+3600 < T <= 7200	T	9	60	T + 540
+7200 < T <= 2 147 460 (35 791 x 60 = 2 147 460)	T	9	75	T + 675
+T > 2 147 460	2 147 460	9	75	2 147 460 + 675
+The TCP_KeepAlive option value can range from 1 – 2 147 460 seconds. For values greater than 2 hours (7200 seconds), the probe interval and number of probes are adjusted as the specified interval increases until they coincide with the default algorithm. If no response is received from the remote partner after the listed number of probes, the connection is terminated.
+
+Tips
+The SO_KeepAlive function must be activated before any keep alive processing is done. The KEEPALIVEOPTIONS configuration value is used for timing unless a specific value has been provided through the TCP_KeepAlive option.
+The TCP_KeepAlive option can be set before or after the SO_KeepAlive function is activated, but timing does not take effect until the SO_KeepAlive status is set to active.

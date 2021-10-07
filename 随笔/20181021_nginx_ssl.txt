@@ -1,0 +1,49 @@
+证书合并
+cat mydomain.crt COMODORSADomainValidationSecureServerCA.crt COMODORSAAddTrustCA.crt > mydomain_ssl.crt
+GeoTrust证书
+
+
+server {  
+    listen 80;
+    listen 443 ssl;
+    server_name infinisign.com;
+    root   /home/static;
+    index index.php index.html index.htm;
+    return 301 https://$host$request_uri; 
+    }
+
+    ssl_certificate /opt/ssl/infinisign.crt;
+    ssl_certificate_key /opt/ssl/infinisign.key;
+    # 配置加密套件
+    ssl_ciphers 'AES128+EECDH:AES128+EDH:!aNULL';
+	ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS';
+
+  # 启用 ocsp stapling (网站可以以隐私保护、可扩展的方式向访客传达证书吊销信息的机制)
+  # http://blog.mozilla.org/security/2013/07/29/ocsp-stapling-in-firefox/
+  resolver 8.8.8.8 8.8.4.4;
+  ssl_stapling on;
+  ssl_stapling_verify on;
+  ssl_trusted_certificate /etc/nginx/ssl/star_forgott_com.crt;
+
+  # 启用 HSTS(HTTP Strict Transport Security) https://developer.mozilla.org/en-US/docs/Security/HTTP_Strict_Transport_Security
+  # 避免 ssl stripping https://en.wikipedia.org/wiki/SSL_stripping#SSL_stripping
+  # 或 https://hstspreload.org/
+  add_header Strict-Transport-Security "max-age=31536000; includeSubdomains; preload";
+
+  # ... 其他配置
+}
+
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_session_cache shared:SSL:10m;
+    # 配置OCSP装订
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.4.4 8.8.8.8 valid=300s;
+    resolver_timeout 10s;
+    # 使用服务器端的首选算法
+    ssl_prefer_server_ciphers on;
+    # DHE 密钥交换
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    ...
+}

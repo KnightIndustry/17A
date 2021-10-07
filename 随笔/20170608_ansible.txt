@@ -1,0 +1,17 @@
+yum install  ansible
+
+1	配置 主机  /etc/ansible/hosts
+
+2	配置 ssh 密码登录
+
+3	ansible 主机(组) -m 模块 -a 模块指令
+	常用模块 command shell copy
+ansible test -m command -a 'timedatectl'
+
+ansible test -m copy -a 'src=/zywa/tomcat dest=/zywa'
+ansible test -m file -a 'path=/zywa state=touch'     新建
+
+fact_caching = redis
+fact_timeout = 86400
+fact_caching_prefix = zywa
+fact_caching_connection = 42.51.172.18:6379:0:foobared

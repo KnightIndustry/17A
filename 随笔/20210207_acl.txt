@@ -1,0 +1,94 @@
+consul config
+
+
+
+
+
+####################################
+
+{
+  "primary_datacenter": "dc1",
+  "acl" : {
+    "enabled": true,
+    "default_policy": "deny",
+    "down_policy": "extend-cache"
+  }
+}
+####################################
+
+consul acl bootstrap   // crate master token
+
+AccessorID:       921c76bf-b08c-0d6a-3daa-e6578ba549c2
+SecretID:         bda16813-dc8e-5a7d-e3e0-d0fb781aa4b1
+Description:      Bootstrap Token (Global Management)
+Local:            false
+Create Time:      2021-02-07 00:16:44.130647217 +0800 CST
+Policies:
+   00000000-0000-0000-0000-000000000001 - global-management
+
+
+export CONSUL_HTTP_TOKEN=bda16813-dc8e-5a7d-e3e0-d0fb781aa4b1
+
+//Create the agent policy
+
+# server_policy.hcl
+node "server-1" {
+  policy = "write"
+}
+node_prefix "" {
+   policy = "read"
+}
+service_prefix "" {
+   policy = "read"
+}
+
+//initialize
+consul acl policy create \
+  -name server_policy \
+  -rules @server_policy.hcl
+
+
+//Create the agent token
+consul acl token create -description "consul-server-one agent token" \
+  -policy-name server_policy
+
+//Add the token to the agent
+consul acl set-agent-token agent "<agent token here>"
+
+
+
+key_prefix "redis/" {
+  policy = "read"
+}
+
+
+# consul-client-policy.hcl
+node_prefix "client-" {
+  policy = "write"
+}
+node_prefix "" {
+   policy = "read"
+}
+service_prefix "" {
+   policy = "read"
+}
+
+
+
+
+# read-only-policy.hcl
+node_prefix "" {
+   policy = "read"
+}
+service_prefix "" {
+   policy = "read"
+}
+key-prefix "" {
+   policy = "read"
+}
+
+
+curl
+--header "X-Consul-Token: 461b1743-a669-9325-a187-9b9d893df8f8"
+--request PUT
+--data '{"Token": "bb53b1b4-27ee-33a7-dc24-ea9241fa1891"}'

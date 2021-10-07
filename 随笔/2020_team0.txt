@@ -1,0 +1,21 @@
+nmcli connection add type team con-name team0 ifname team0 team.config '{"runner": {"name": "activebackup"}}'
+
+nmcli con add type team-slave con-name eth1  ifname eth1 master team0
+nmcli con add type team-slave con-name eth2  ifname eth2 master team0
+
+nmcli connection modify team0 ipv4.addresses "172.16.1.100/24"  \
+                              ipv4.dns "114.114.114.114 8.8.8.8"  \
+							  ipv4.method manual
+
+#ip route add default via 172.16.51.100 dev team0 table internal
+
+#ip rule add from 172.16.51.7 table internal
+
+
+ip route add default via 172.16.51.100 dev team0 table 10
+
+nmcli c mod team0 ipv4.routing-rules "priority 100 iif eth0 table 10"
+
+nmcli c mod team0 +ipv4.routing-rules "priority 100 from 172.16.51.100 table 10"
+	
+	

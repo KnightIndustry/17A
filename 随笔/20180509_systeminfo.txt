@@ -1,0 +1,173 @@
+#!/bin/bash
+##封装函数
+
+systeminfo() {
+#++++++++++++++++++++++++++++++
+##################整体介绍
+####需要的预先安装的组件
+####	awk	cat	virt-what
+#软件包检查并安装
+rpm --help >/dev/null 2>&1 && rpm -qa |grep virt-what >/dev/null 2>&1 ||yum install -y virt-what >/dev/null 2>&1 
+dpkg --help >/dev/null 2>&1 && dpkg -l |grep virt-what >/dev/null 2>&1 ||apt-get install virt-what -y >/dev/null 2>&1
+
+
+#+++++++++++++++++++++++++++++++
+####自定义函数部分
+#获取系统分支及版本
+get_opsy() {
+    [ -f /etc/redhat-release ] && awk '{print ($1,$3~/^[0-9]/?$3:$4)}' /etc/redhat-release && return
+    [ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $3,$4,$5}' /etc/os-release && return
+    [ -f /etc/lsb-release ] && awk -F'[="]+' '/DESCRIPTION/{print $2}' /etc/lsb-release && return
+}
+
+#查看CPU是否支持64
+cpu_64() {
+	[ `cat /proc/cpuinfo | grep flags | grep ' lm ' | wc -l` -gt 0 ] && echo "支持" || echo "不支持"
+}
+
+#磁盘信息
+disk() {
+
+	#检查并安装smartmontools软件包
+        rpm --help >/dev/null 2>&1 && rpm -qa |grep smartmontools >/dev/null 2>&1 ||yum install smartmontools -y >/dev/null 2>&1
+	dpkg --help >/dev/null 2>&1 && dpkg -l |grep smartmontools >/dev/null 2>&1 ||apt-get install smartmontools -y >/dev/null 2>&1
+
+        ls /dev/[sh]d[a-z] | while read line
+        do
+                #smartctl -a $line | grep "Model Family" | awk -F: '{printf "制造商:%s\n",$2}' |sed 's/^[ \t]*//;s/[ \t]*$//' >> 10
+                smartctl -a $line |grep "Model Family" | awk -F: '{print $2}' |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf " 制造商:%s \n", $0}' >> 10
+                smartctl -a $line | grep "Rotation Rate" | awk -F: '{print $2}' |sed 's/^[ \t]*//;s/[ \t]*$//' |  awk -F: '{printf " 转  速:%s \n",$0}' >> 20
+                smartctl -a $line | grep "Sector Size" | awk -F: '{print $2}' |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf " 扇  区:%s \n",$0}' >> 30
+                smartctl -a $line | grep "User Capacity" | awk -F: '{print $2}' |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf " 容  量:%s \n",$0}' >> 40
+                smartctl -a $line | grep "Serial Number" | awk -F: '{print $2}' |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf " 序列号:%s \n",$0}' >> 50
+                echo "$line " >> 60
+		lsblk  >> 70
+        done
+
+        paste -d"|" 60 10 20 30 40 50
+	echo -e "\t"
+	cat 70
+	rm -f 60 10 20 30 40 50 70
+}
+
+#网卡信息
+net() {
+
+	pcinetsl=$( lspci | egrep -i --color 'network|ethernet' |wc -l )
+
+	ip address |grep ^[0-9] |awk -F: '{print $2}' |sed "s/ //g" |grep '^[ebp]' | while read line1
+	do
+		echo -e "$line1 " >> a
+		ethtool $line1 | grep "Speed" |awk -F: '{printf " 速率:%s \n",$2}' >> b
+		ethtool $line1 | grep "Duplex" |awk -F: '{printf " 双工模式:%s \n",$2}' >> c
+		ethtool $line1 | grep "Supports auto-negotiation" | awk -F: '{printf " 自动协商:%s \n",$2}' >> d
+		ethtool $line1 | grep "Port" |awk -F: '{printf " 网口类型:%s \n",$2}' >> e
+		ethtool $line1 | grep "Link detected" |awk -F: '{printf " 链接状态:%s \n",$2}' >> f
+		ip address show $line1 | grep -E "UP|DOWN" | awk -F" " '{printf " 工作状态:%s \n",$9}' >> g
+		ip address show $line1 | grep "mtu" | awk -F" " '{printf " MTU:%s \n",$5}' >> h
+		ip address show $line1 | grep "link/" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F" " '{printf " MAC值:%s \n",$2}' >> i
+		ip add show $line1 | grep -w "inet" |sed "s/^[ \t]*//g" |awk -F" " '{printf " %s  ",$2}'  |sed "s/ /IP地址:/1" >> j
+	done
+
+	echo -e "pci网卡数量    : $pcinetsl 张"
+	paste -d"|" a b c d e f g h i j
+	rm -f a b c d e f g h i j
+}
+
+#++++++++++++++++++++++++++++++
+cpus=$( cat /proc/cpuinfo |grep "physical id"|sort |uniq|wc -l )
+cpuname=$( awk -F: '/model name/ {name=$2} END {print name}' /proc/cpuinfo | sed 's/^[ \t]*//;s/[ \t]*$//' )
+cpucores=$( cat /proc/cpuinfo |grep "cores"|uniq | awk -F: '{print $2}' )
+cputhread=$( cat /proc/cpuinfo |grep "processor"|wc -l )
+cpuvm=$( cat /proc/cpuinfo | grep -E '(vmx|svm)'  >/dev/null 2>&1 && echo "open" || echo "close"  )
+freq=$( awk -F: '/cpu MHz/ {freq=$2} END {print freq}' /proc/cpuinfo | sed 's/^[ \t]*//;s/[ \t]*$//' )
+tram=$( free -m | awk '/Mem/ {print $2}' )
+uram=$( free -m | awk '/Mem/ {print $3}' )
+swap=$( free -m | awk '/Swap/ {print $2}' )
+uswap=$( free -m | awk '/Swap/ {print $3}' )
+arch=$( uname -m )
+lbit=$( getconf LONG_BIT )
+up=$( awk '{a=$1/86400;b=($1%86400)/3600;c=($1%3600)/60} {printf("%d days, %d hour %d min\n",a,b,c)}' /proc/uptime )
+load=$( w | head -1 | awk -F'load average:' '{print $2}' | sed 's/^[ \t]*//;s/[ \t]*$//' )
+system=$( uname -a | awk '{print $1}')
+kern=$( uname -r )
+hostname=$( hostname )
+#ip=$( curl -s myip.ipip.net )
+ipv4=$( curl -s myip.ipip.net | awk -F ' ' '{print $2}' | awk -F '：' '{print $2}' )
+ipgs=$( curl -s myip.ipip.net | awk -F '：' '{print $3}' )
+opsy=$( get_opsy )
+cpu64=$( cpu_64 )
+vm=$( virt-what )
+
+memmax=$( dmidecode -t 16 |grep -P 'Maximum\s+Capacity' | awk -F: '{print $2}' )
+memcao=$( dmidecode -t 16 |grep "Number Of Devices" | awk -F: '{print $2}' )
+memz=$( dmidecode -t 19 |grep "Range Size" |awk -F: '{print $2}' )
+
+#内存信息
+#内存厂商
+memoe=$( dmidecode -t 17 |grep "Manufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf "厂商:%s\n" ,$2}' >12 )
+memsn=$( dmidecode -t 17 |grep "Serial Number" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf "序列号:%s\n" ,$2}' > 23)
+
+#内存类型
+memfactor=$( dmidecode -t 17 |grep "Form Factor" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf "Factor:%s\n" ,$2}' > 34 )
+memddr=$( dmidecode -t 17 |grep "Type:" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf "Type:%s\n" ,$2}' > 45 )
+
+memhz=$( dmidecode -t 17 |grep "Configured Clock Speed:"| sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf "真实频率:%s\n" ,$2}' > 56 )
+memsize=$( dmidecode -t 17 |grep "Size" | sed 's/^[ \t]*//;s/[ \t]*$//' > 67 )
+meminfo=$( paste 12 34 45 56 23 67 )
+
+#主机信息
+#制造商
+serveroe=$( dmidecode -t 1 | grep "Manufacturer" |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf "制造商:%s \n" ,$2}' > 1 )
+serverpn=$( dmidecode -t 1 | grep "Product Name" |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf " 主机型号:%s \n" ,$2}' > 2 )
+serverfm=$( dmidecode -t 1 | grep "Family" |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf " Family:%s \n" ,$2}' > 3 )
+serversn=$( dmidecode -t 1 | grep "Serial Number" |sed 's/^[ \t]*//;s/[ \t]*$//' | awk -F: '{printf " 主机SN码:%s \n" ,$2}' > 4 )
+serverinfo=$( paste -d"|" 1 2 3 4 )
+
+
+#硬盘信息
+disksl=$( ls -l /dev/[sh]d[a-z] | wc -l )
+
+#pci物理网卡信息
+#pcinetsl=$( lspci | egrep -i --color 'network|ethernet' |wc -l )
+
+####系统信息显示部分
+echo -e "\n##################硬件信息##############"
+echo "cpu物理数量	: $cpus 颗"
+echo "CPU型号		: $cpuname"
+echo "CPU核心数      	: $cpucores"
+echo "CPU线程数      	:  $cputhread"
+echo "CPU频率		: $freq MHz"
+echo "CPU是否支持64位	: $cpu64"
+echo "CPU虚拟化状态	: $cpuvm"
+echo "内存插槽数量	: $memcao"
+echo "最大内存支持	: $memmax"
+echo "实际内存大小	: $memz"
+echo -e "\n##内存信息\n$meminfo"
+rm -f 12 23 34 45 56 67
+
+echo -e "\n##主机信息\n$serverinfo"
+rm -f 1 2 3 4
+
+echo -e "\n##系统层面得到的硬盘信息"
+echo "硬盘数量	: $disksl 块"
+disk
+
+echo -e "\n##网卡信息"
+net
+
+echo -e "\n##################系统信息###############"
+echo "CPU负载		: $load"
+echo "MEMORY		: $tram MB ($uram MB Used)"
+echo "SWAP		: $swap MB ($uswap MB Used)"
+echo "OS类别		: $system"
+echo "内核版本	: $kern"
+echo "OS版本		: $opsy"
+echo "OS架构		: $arch ($lbit 位)"
+echo "虚拟化		: $vm"
+echo "OS运行时长	: $up"
+echo "主机名		: $hostname"
+echo "IPv4		: $ipv4	 $ipgs"
+
+}
+systeminfo

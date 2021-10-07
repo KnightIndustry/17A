@@ -1,0 +1,6 @@
+yum install --setopt=protected_multilib=false 
+
+
+aapt
+
+yum -y install   ld-linux.so.2 libz.so.1 libstdc++ libstdc++.so.6  --setopt=protected_multilib=false

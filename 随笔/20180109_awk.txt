@@ -1,0 +1,489 @@
+一、AWK简介
+
+   AWK三大文本处理工具之一，是一个非常强大的文本处理工具。它不仅是 Linux 中也是任何环境中现有的功能最强大的数据处理引擎之一。这种编程及数据操作语言（其名称来自于它的创始人 Alfred Aho 、Peter Weinberger 和 Brian Kernighan 姓氏的首个字母）的最大功能取决于一个人所拥有的知识。AWK 提供了极其强大的功能：可以进行样式装入、流控制、数学运算符、进程控制语句甚至于内置的变量和函数。它具备了一个完整的语言所应具有的几乎所有精美特性。实际上AWK的确拥有自己的语言：AWK 程序设计语言，三位创建者已将它正式定义为“样式扫描和处理语言”。它允许您创建简短的程序，这些程序读取输入文件、为数据排序、处理数据、对输入执行计算以及生成报表，还有很多其他的功能；在Linux系统中awk链接到gawk，gawk是awk的GNU版本，它提供了Bell实验室和GNU的一些扩展，下面我们介绍的awk就是以GNU的gawk为例来讲解
+
+二、AWK工作原理
+
+   在Linux系统中，"/etc/passwd"是一个非常典型的格式化文件，各字段之间用"："作为分隔符隔开，Linux系统中的大部分日志文件也是格式化的文件，处理这些文件从中提取相关信息是管理员的日常工作之一，有了AWK工具的帮助便使得这些工作变得很轻松
+
+
+[root@localhost ~]# cat /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+sync:x:5:0:sync:/sbin:/bin/sync
+shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
+halt:x:7:0:halt:/sbin:/sbin/halt
+mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
+... ... ...
+若需要查找并打印出"/etc/passwd"的用户名，用户ID及组ID，使用下面的awk命令即可完成：
+
+[root@localhost ~]# awk -F: '{print $1,$3,$4}' /etc/passwd
+   awk从文件或者标准输入读取信息，与sed一样信息的读取也是逐行读取的，处理过程与sed类似，不同的是awk将文本文件中的一行视为一个记录，而将一行中的某一部分作为记录中的一个字段。为了操作这些不同的字段，awk借用了shell的方法，用"$1,$2,$3..."这样的方式来顺序地表示行（记录）中的不同的字段。特殊地awk用"$0"表示整个行（记录）。不同的字段之间是用称作分隔符的字符来分隔开来的。系统默认的分隔符是空格，awk允许在命令中使用"[-F 分隔符]"的形式指定特定分隔符
+
+在上述示例中，awk命令对"/etc/passwd"的处理过程如下图：
+
+2013-09-03_230259.gif
+
+三、AWK的调用方式
+
+AWK有三种调用方式如下：
+
+1、命令行键入方式，也是最常用的一种方式，命令格式为：
+
+awk [-F 分隔符] awk指令 输入文件
+shell 命令 | awk [-F 分隔符] awk指令
+   其中"[-F 分隔符]"为可选，awk使用空格作为缺省的分隔符，因此如果要查看有空格的文件，不用指定这个选项，但如果要查看如"/etc/passwd"就需要使用"-F"选项指定以":"为分隔符了。
+
+awk指令由pattern（模式）和action(动作)或是两者的组合组成，常见的形式为"'/pattern/{action}"，awk指令必须使用单引号；pattern是正则表达式、判断条件真假的表达式或两者的组合，多个pattern间使用","分隔；action是awk所要采取的动作，由awk语句组成，多个awk语句使用“;”分隔
+
+2、编写awk运行脚本
+
+   是将所有awk命令插入一个文件，并使用awk程序执行，然后用awk命令解释器作为脚本的首行，通过键入脚本脚本名称来调用
+
+3、将所有的awk命令插入一个单独文件，然后调用：
+
+awk -f awk-script-file 输入文件
+注： -f：指定写有awk命令的文件名    "输入文件"：需要使用awk进行处理的文件名
+
+用法格式
+
+awk [options] 'script' file1 file2, ...
+awk [options] 'PATTERN { action }' file1 file2, ...
+options:
+
+   -F fs|--field-separator=fs：指定文件分隔符
+
+   -v var=val|--assign=var=val：赋值一个用户定义变量
+
+   -f scripfile|--file scriptfile：从脚本文件中读取awk命令
+
+   -W compact|--compat：在兼容模式下运行awk
+
+四、print在AWK中的使用
+
+使用"/etc/passwd"文件做测试：
+
+示例： 打印出整行
+
+[root@localhost ~]# awk '{print $0}' /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+... ... ...
+示例：打印出"/etc/passwd"文件中以"/bash"结尾的行
+
+[root@localhost ~]# awk '/bash/' /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+mockbuild:x:500:500::/home/mockbuild:/bin/bash
+mysql:x:498:498::/home/mysql:/bin/bash
+示例：查找"/etc/passwd"文件中包含"nologin"的行，以":"为分隔符并打印出第一个与第三个字段
+
+[root@localhost ~]# awk -F: '/nologin/{print $1,$3}' /etc/passwd | head -3
+bin 1
+daemon 2
+adm 3
+示例：打印每一行的最后一个字段
+
+[root@localhost ~]# awk -F: '{print $NF}' /etc/passwd
+/bin/bash
+/sbin/nologin
+/sbin/nologin
+... ... ...
+示例：打印出每行的倒数第二个字段，并在后面打印ALLEN
+
+[root@localhost ~]# awk -F: '{print $(NF-1),"ALLEN"}' /etc/passwd
+/root ALLEN
+/bin ALLEN
+/sbin ALLEN
+... ... ...
+示例：打印出每一行的行号
+
+[root@localhost ~]# awk '{print NR,$0}' /etc/passwd
+1 root:x:0:0:root:/root:/bin/bash
+2 bin:x:1:1:bin:/bin:/sbin/nologin
+3 daemon:x:2:2:daemon:/sbin:/sbin/nologin
+... ... ...
+示例：打印当前系统环境变量"PATH"
+
+[root@localhost ~]# awk 'BEGIN{print ENVIRON["PATH"];}'
+/usr/local/apache/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin:/root/bin
+示例：修改打印输出符号，特殊字符需要转义
+
+[root@localhost ~]# awk -F: -v OFS=. '{print $1,$NF}' /etc/passwd | head -2
+root./bin/bash
+bin./sbin/nologin
+[root@localhost ~]# awk -F: -v OFS=\<\> '{print $1,$NF}' /etc/passwd | head -2
+root<>/bin/bash
+bin<>/sbin/nologin
+[root@localhost ~]# awk -F: -v OFS=- '{print $1,$NF}' /etc/passwd | head -2
+root-/bin/bash
+bin-/sbin/nologin
+AWK变量：
+
+AWK默认有很多变量，如前面所用的"$1-$n"、$0、OFS、NF等，如下：
+
+变量	注释
+$n	当前记录的第n个字段，字段间由FS分隔。
+$0	完整的输入记录。
+ARGC	命令行参数的数目。
+ARGIND	命令行中当前文件的位置(从0开始算)。
+ARGV	包含命令行参数的数组。
+CONVFMT	数字转换格式(默认值为%.6g)
+ENVIRON	环境变量关联数组。
+ERRNO	最后一个系统错误的描述。
+FIELDWIDTHS	字段宽度列表(用空格键分隔)。
+FILENAME	当前文件名。
+FNR	同NR，但相对于当前文件。
+FS	字段分隔符(默认是任何空格)。
+IGNORECASE	如果为真，则进行忽略大小写的匹配。
+NF	当前记录中的字段数。
+NR	当前记录数，就是行号，从1开始
+OFMT	数字的输出格式(默认值是%.6g)。
+OFS	输出字段分隔符(默认值是一个空格)。
+ORS	输出记录分隔符(默认值是一个换行符)。
+RLENGTH	由match函数所匹配的字符串的长度。
+RS	记录分隔符(默认是一个换行符)。
+RSTART	由match函数所匹配的字符串的第一个位置
+SUBSEP	数组下标分隔符(默认值是\034)
+
+五、printf在awk中的使用
+
+命令格式：     printf format1,format2..., item1,item2...    
+
+printf与print的不同之处是不会自动换行，而且还需要对每个字体做格式化输出，当然命令本身还多了个f
+
+修饰符：
+-:  左对齐
++:  显示数值符号
+N： 显示宽度
+格式化符	注释
+%d	%i 十进制有符号整数
+$f	浮点数
+%s	字符串
+%u	十进制无符号整数
+%e	%E 科学计数法显示数值
+%x	%X 无符号以十六进制表示的整数
+%g	%G 以tuip科学计数法或浮点数的格式显示数值
+%c	显示字符的ASCII码
+%o	无符号以八进制表示的整数
+%p	指针的值
+%%	显示%自身
+示例：左对齐与右对齐分别测试打印出"/etc/passwd"文件中的第一个字段与最后一个字段
+
+[root@localhost ~]# awk -F: '{printf "%15s %15s\n",$1,$NF}' /etc/passwd | head -3
+           root       /bin/bash
+            bin   /sbin/nologin
+         daemon   /sbin/nologin
+[root@localhost ~]# awk -F: '{printf "%-15s %15s\n",$1,$NF}' /etc/passwd | head -3
+root                  /bin/bash
+bin               /sbin/nologin
+daemon            /sbin/nologin
+示例：以指定的格式输入"/etc/passwd"文件中的内容
+
+[root@localhost ~]# awk -F: '{printf "%-15s~%10s     ~%15s\n",$1,$3,$4}' /etc/passwd | head -3
+root           ~         0     ~              0
+bin            ~         1     ~              1
+daemon         ~         2     ~              2
+输出重定向：
+
+print items > output-file
+print items >> output-file
+print items | command
+特殊文件描述符：
+
+/dev/stdin：标准输入
+/dev/sdtout: 标准输出
+/dev/stderr: 错误输出
+/dev/fd/N: 某特定文件描述符，如/dev/stdin就相当于/dev/fd/0；
+示例：下面两种用法效果是一样的：
+
+[root@localhost ~]# awk -F: '{printf "%-15s %i\n",$1,$3,$NF > "/root/printf" }' /etc/passwd
+[root@localhost ~]# awk -F: '{printf "%-15s %i\n",$1,$3,$NF}' /etc/passwd > /tmp/printf
+
+六、AWK的操作符
+
+1、算术操作符
+
+操作符     描述
+-x        负值
++x        转换为数值
+x^y       次方
+x**y      次方
+x*y       乘法
+x/y       除法
+x+y       加法
+x-y       减法
+x%y       取余
+2、字符串操作符
+
+只有一个，而且不用写出来，用于实现字符串连接
+
+示例：
+
+[root@localhost ~]# awk '{print $1 $2}' printf | head -2
+root0
+bin1
+[root@localhost ~]# awk '{print $1$2}' printf | head -2
+root0
+bin1
+3、赋值操作符
+
+操作符     描述
+=         赋值操作符
++=        赋值加操作符
+-=        赋值减操作符
+*=        赋值乘操作符
+/=        赋值除操作符
+%=        赋值求余操作符
+^=        赋值求幂操作符
+**=       赋值求幂操作符
+注：如果某模式为=号，此时使用/=/可能会有语法错误，应以/[=]/替代
+4、布尔值
+
+awk中，任何非0值或非空字符串都为真，反之就为假
+
+5、比较操作符
+
+操作符     描述
+>         大于
+<         小于
+>=        大于等于
+<=        小于等于
+==        等于
+!=        不等于
+~         匹配
+!~        匹配取反
+6、表达式之间的逻辑关系符
+
+&& ： 逻辑与
+|| ： 逻辑或
+示例：打印"/etc/passwd"文件中用户uid小于100且以"r"开头的行的用户名及UID
+
+[root@localhost ~]# awk -F: '$3<=100 && $1 $3 ~ /^r/{printf "%-5s %5s\n",$1,$3}' /etc/passwd
+root      0
+示例：打印"/etc/passwd"文件中用户UID大于等于500或以"m"开头的行
+
+[root@localhost ~]# awk -F: '$3>=500 || $1 $3 ~ /^m/{printf "%-5s %5s\n",$1,$3}' /etc/passwd
+mail      8
+mockbuild   500
+mysql   498
+7、条件表达式
+
+selector?if-true-exp:if-false-exp
+if selector; then
+  if-true-exp
+else
+  if-false-exp
+fi
+示例：在变量值中查找判断
+
+[root@localhost ~]# awk 'BEGIN{Name="welcome to china";print index(Name,"china")?"OK":"NO";}'
+OK
+8、函数调用
+
+function_name (para1,para2)
+上面所介绍的内容将在下面做示例介绍
+
+
+七、AWK的模式
+
+模式可以是表达式与正则表达式，还支持取反与模糊匹配等，如下：
+
+
+常见的模式类型
+Regexp: 正则表达式，格式为/regular expression/
+expresssion： 表达式，其值非0或为非空字符时满足条件，如：$1 ~ /foo/ 或 $1 == "allen"，用运算符~(匹配)和!~(不匹配)
+Ranges： 指定的匹配范围，格式为pat1,pat2
+BEGIN/END：特殊模式，仅在awk命令执行前运行一次或结束前运行一次
+Empty(空模式)：匹配任意输入行
+
+
+
+   模式可以是以下任意一个：
+
+/正则表达式/：使用通配符的扩展集。
+
+关系表达式：可以用下面运算符表中的关系运算符进行操作，可以是字符串或数字的比较，如$2>%1选择第二个字段比第一个字段长的行。
+
+模式匹配表达式：
+
+模式，模式：指定一个行的范围。该语法不能包括BEGIN和END模式。
+
+BEGIN：让用户指定在第一条输入记录被处理之前所发生的动作，通常可在这里设置全局变量。
+
+END：让用户在最后一条输入记录被读取之后发生的动作。
+
+   操作：
+
+   操作由一个或多个命令、函数、表达式组成，之间由换行符或分号分隔，并位于花括号内，主要有四个部分：变量或数组赋值、输出命令、内置函数、控制流命令
+
+示例：打印"/etc/passwd"文件中以"bash"结尾和非"bash"结尾的行
+
+[root@localhost ~]# awk -F: '/bash$/{print $1,$3,$NF}' /etc/passwd
+root 0 /bin/bash
+mockbuild 500 /bin/bash
+mysql 498 /bin/bash
+[root@localhost ~]# awk -F: '!/bash$/{print $1,$3,$NF}' /etc/passwd | head -3
+bin 1 /sbin/nologin
+daemon 2 /sbin/nologin
+adm 3 /sbin/nologin
+示例：打印UID包含1的用户名及UID等于1的用户名及UID
+
+[root@localhost ~]# awk -F: '$3~1{print $1,$3}' /etc/passwd | head -3
+bin 1
+uucp 10
+operator 11
+[root@localhost ~]# awk -F: '$3==1{print $1,$3}' /etc/passwd | head -3
+bin 1
+其实除了用到过的表达式外还有ranges、BEGIN等，还可以使用以范围匹配等
+
+示例：打印"/etc/passwd"文件中以bin开头到adm开头中所有用户的用户名及UID与Shell
+
+[root@localhost ~]# awk -F: '/^bin/,/^adm/{print $1,$3,$NF}' /etc/passwd
+bin 1 /sbin/nologin
+daemon 2 /sbin/nologin
+adm 3 /sbin/nologin
+示例：打印输入结果添加注释与结束符
+
+[root@localhost ~]# awk -F: 'BEGIN{print "UserName:UID"}{print $1,"\t",$3}END{print "===END==="}' /etc/passwd
+UserName:UID
+root     0
+bin      1
+... ... ...
+mysql    498
+===END===
+示例：打印用户名以d开头的，并显示其UID，要有注释信息
+
+[root@localhost ~]# awk -F: 'BEGIN{print "UserName:UID"}$1 ~ /^d/{printf "%-10s%s\n",$1,$3}END{print "===END==="}' /etc/passwd
+UserName:UID
+daemon    2
+dbus      81
+===END===
+示例：统计以shell为"bash"的总用户数
+
+[root@localhost ~]# awk -F: 'BEGIN{sum=0}$NF ~ /bash$/{count++}END{print "SHELL is Bash:",count}' /etc/passwd
+SHELL is Bash: 3
+示例：使用BEGIN可以直接显示字符也可以为字段指定分隔符
+
+[root@localhost ~]# awk 'BEGIN{print "All""en"}'
+Allen
+[root@localhost ~]# awk -v OFS=- 'BEGIN{print "All","en"}'
+All-en
+[root@localhost ~]# awk 'BEGIN{FS=":"}{print $1,$3}' /etc/passwd | head -2
+root 0
+bin 1
+示例：打印系统用户和普通用户并输出
+
+[root@localhost ~]# awk -F: '{if ($3<500)print $1,"System User";else print $1 "Common User"}' /etc/passwd
+root System User
+... ... ...
+mockbuild Common User
+mysql System User
+[root@localhost ~]# awk -F: '{if ($3==0)print $1,"Admin User";else if($3>0 && $3<500){print $1 " System User"}}' /etc/passwd
+root Admin User
+bin System User
+daemon System User
+... ... ...
+示例：打印每行的奇数与偶数字段
+
+[root@localhost ~]# awk -F: '{i=1;while(i<=NF){print $i;i+=2}}' /etc/passwd #奇
+[root@localhost ~]# awk -F: '{i=2;while(i<=NF){print $i;i+=2}}' /etc/passwd #偶
+[root@localhost ~]# awk -F: '{for(i=1;i<NF;i+=2)print $i}' /etc/passwd #奇
+[root@localhost ~]# awk -F: '{for(i=2;i<NF;i+=2)print $i}' /etc/passwd #偶
+示例：显示ID为奇数的用户
+
+awk -F: '{if($3%2==0) next;print $1,$3}' /etc/passwd
+数组：
+
+示例：数组引用，下标可以是字符串但需要双引号，数字不需要
+
+[root@localhost ~]# awk 'BEGIN{A[1]="hello";B[2]="world";print A[1],B[2]}'
+[root@localhost ~]# awk 'BEGIN{A["a"]="hello";B["b"]="world";print A["a"],B["b"]}'
+示例：被/^tcp/模式匹配到的行，数组S[$NF]就加1，NF为当前匹配到的行的最后一个字段，此处用其值做为数组S的元素索引
+
+[root@localhost ~]# netstat -ant | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
+示例：统计每个shell用户的数量
+
+awk -F: '$NF!~/^$/{BASH[$NF]++}END{for(A in BASH){printf "%15s:%i\n",A,BASH[A]}}' /etc/passwd
+示例：计算100以内的加法
+
+awk 'BEGIN{res=0;i=0;do{res+=i;i++;}while(i<=100)print res;}'
+awk 'BEGIN{while(i<=100){res+=i;i++;}print res;}'
+示例：统计日志IP的访问次数，最多的前6个
+
+awk '{IP[$1]++}END{for(A in IP)print IP[A],A}' access_log|sort -rn|head -6
+AWK内置函数：
+
+split(string, array [, fieldsep [, seps ] ])
+
+功能：将string表示的字符串以fieldsep为分隔符进行分隔，并将分隔后的结果保存至array为名的数组中；数组下标为从1开始的序列；
+
+netstat -ant | awk '/:80\>/{split($5,clients,":");IP[clients[1]]++}END{for(i in IP){print IP[i],i}}' | sort -rn | head -50
+length([string])
+
+功能：返回string字符串中字符的个数；
+
+substr(string, start [, length])
+
+功能：取string字符串中的子串，从start开始，取length个；start从1开始计数；
+
+system(command)
+
+功能：执行系统command并将结果返回至awk命令
+
+systime()
+
+功能：取系统当前时间
+
+tolower(s)
+
+功能：将s中的所有字母转为小写
+
+toupper(s)
+
+功能：将s中的所有字母转为大写
+
+
+
+示例：读取100以内随机数
+
+awk 'BEGIN{srand();fr=int(100*rand());print fr;}'
+示例：正则表达式,match函数的使用
+
+[root@localhost ~]# awk 'BEGIN{res="welcome to china!";print match(res,/[0-9]+/)?"ok":"no";}'
+no
+[root@localhost ~]# awk 'BEGIN{res="welcome to 123 china!";print match(res,/[0-9]+/)?"ok":"no";}'
+ok
+示例：截取字符串，从第12个字符向后截取5个字符长度
+
+[root@localhost ~]# awk 'BEGIN{info="welcome to china!";print substr(info,12,5);}'
+china
+示例：显示/etc/passwd中的前三个字段
+
+
+[root@localhost ~]# awk -F: '{for(i=1;i<=3;i++) print $i}' /etc/passwd
+[root@localhost ~]# awk -F: '{for(i=1;i<=NF;i++) { if (length($i)>=4) {print $i}}}' /etc/passwd
+示例：调用外部命令执行，显示磁盘使用信息
+
+
+[root@localhost ~]# awk 'BEGIN{disk=system("df -h");print disk;}'
+文件系统          容量  已用  可用 已用%% 挂载点
+/dev/mapper/VolGroup-lv_root
+                       50G   12G   36G  24% /
+tmpfs                 194M     0  194M   0% /dev/shm
+/dev/sda1             485M   45M  416M  10% /boot
+/dev/mapper/VolGroup-lv_home
+                       67G  180M   63G   1% /home
+0
+示例：时间函数strftime、systime的使用
+
+
+[root@localhost ~]#  awk 'BEGIN{Tim=mktime("2013 09 04 13 06 26");print strftime("%c",Tim);}'
+2013年09月04日 星期三 13时06分26秒
+[root@localhost ~]# date
+2013年 09月 04日 星期三 14:09:35 CST
+[root@localhost ~]# awk 'BEGIN{Time=mktime("2013 09 04 13 06 26");Time1=systime();print Time1-Time;}'
+3791

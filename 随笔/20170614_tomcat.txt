@@ -1,0 +1,5 @@
+<Connector port=”80″ protocol="org.apache.coyote.http11.Http11NioProtocol"
+connectionTimeout=”20000″
+URIEncoding=”UTF-8″ acceptCount="500" maxThreads="1000"
+enableLookups=”false” 
+redirectPort=”8443″ />

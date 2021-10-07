@@ -1,0 +1,7 @@
+{log_test:log[/var/log/secure,"Failed password"].str(Failed)}=1 and  {log_test:log[/var/log/secure,"Failed password"].nodata(60)}=0
+{172-1-1-27.lightspeed.hstntx.sbcglobal.net:logrt[/zywa/tomcat/logs/catalina.out,"memory leak"].str(memory leak)}=1
+
+
+
+
+{Template Test:logrt[/zywa/tomcat/logs/catalina.out,"memory leak"].str(memory leak)}=1

@@ -1,0 +1,12 @@
+vgcreate VolGroup /dev/sdb
+lvcreate -n root -l 100%free VolGroup
+
+新硬盘加入lvm ，可以先格式化pvcreate 后 vgextend,也可以直接 vgextend 直接加入卷组
+
+lv 扩展
+ lvextend -l +100%FREE /dev/mapper/centos-root
+ 
+ 扩展lv 后文件系统还没有更新
+ 
+  xfs_growfs /dev/mapper/centos-root
+  另有命令 resize2fs ，貌似有问题

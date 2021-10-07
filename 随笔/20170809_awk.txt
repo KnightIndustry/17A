@@ -1,0 +1,19 @@
+awk 基本语法
+一个awk指令由一个模式(pattern)后跟一个动作(action)组成。动作放在 {} 内，用来与模式隔离。每个awk指令用换行符来分割
+pattern { action }
+pattern { action }
+……
+
+
+awk 语法
+awk [OPTION] [--] program-test file ……
+awk [OPTION]  -f program-fiel [] fiel ……
+
+
+
+examples:
+
+awk -F '\t' '{if ($6 != 404 && $6 != 200) print $6 ,$4}'
+
+
+netstat  -n| awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'

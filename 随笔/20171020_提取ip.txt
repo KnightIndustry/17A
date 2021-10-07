@@ -1,0 +1,19 @@
+提取ip
+/usr/sbin/ip -4 a|awk '$1~/inet/ && $2!~/127.0.0.1/{print $2}'|awk -F/ 'NR==1{print $1}'
+
+/usr/sbin/ip -4 a|awk -F "[ /]+" '$2~/inet/ && $3!~/127.0.0.1/  {print $3}'
+
+
+转换ip为主机名
+
+sed  多个表达式 用 ;
+/usr/sbin/ip -4 a|awk '$1~/inet/ && $2!~/127.0.0.1/{print $2}'|awk -F/ 'NR==1{print $1}'|sed 's/^/ip-/;s/\./-/g'
+
+
+禁用 swap
+
+vi /etc/default/grub
+grub2-mkconfig >/etc/grub2.cfg
+
+
+for i in 42.51.172.{2..100}; do  ping -c 1 -W 1 $i > /dev/null && echo "$i in on" || echo "$i is off"; done

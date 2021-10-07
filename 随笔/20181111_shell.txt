@@ -1,0 +1,192 @@
+写好shell脚本的13个技巧
+
+
+提供--help标记
+
+检查所有命令的可用性
+
+独立于当前工作目录
+
+如何读取输入：环境变量 vs. 标记
+
+打印对系统执行的所有操作
+
+如果有必要，提供--silent选项
+
+重新开启显示
+
+用动画的方式显示进度
+
+用颜色编码输出
+
+出现错误立即退出脚本
+
+自己执行清理工作
+
+在退出时使用不同的错误码
+
+在结束时打印一个新行
+#!/bin/sh
+if [ ${#@} -ne 0 ] && [ "${@#"--help"}" = "" ]; then
+  printf -- '...help...\n';
+  exit 0;
+fi;
+
+#!/bin/sh
+_=$(command -v docker);
+if [ "$?" != "0" ]; then
+  printf -- 'You don\'t seem to have Docker installed.\n';
+  printf -- 'Get it: https://www.docker.com/community-edition\n';
+  printf -- 'Exiting with code 127...\n';
+  exit 127;
+fi;
+# ...
+
+#!/bin/sh
+CURR_DIR="$(dirname $0);"
+printf -- 'moving application to /opt/app.jar';
+mv "${CURR_DIR}/application.jar" /opt/app.jar;
+
+
+#!/bin/sh
+# do this
+export AWS_ACCESS_TOKEN='xxxxxxxxxxxx';
+./provision-everything
+# and not
+./provisiong-everything --token 'xxxxxxxxxxx';
+#!/bin/sh
+# do this
+./provision-everything --async --instance-count 400
+# and not
+INSTANCE_COUNT=400 ASYNC=true ./provision-everything
+
+#!/bin/sh
+printf -- 'Downloading required document to ./downloaded... ';
+wget -o ./downloaded https://some.site.com/downloaded;
+printf -- 'Moving ./downloaded to /opt/downloaded...';
+mv ./downloaded /opt/;
+printf -- 'Creating symlink to /opt/downloaded...';
+ln -s /opt/downloaded /usr/bin/downloaded;
+
+
+在必要时提供--silent选项
+有些脚本是为了将其输出传给其他脚本。虽说脚本都应该能够单独运行，不过有时候也有必要让它们把输出结果传给另一个脚本。可以利用stty -echo来实现--silent标记：
+#!/bin/sh
+if [ ${#@} -ne 0 ] && [ "${@#"--silent"}" = "" ]; then
+  stty -echo;
+fi;
+# ...
+# before point of intended output:
+stty +echo && printf -- 'intended output\n';
+# silence it again till end of script
+stty -echo;
+# ...
+stty +echo;
+exit 0;
+
+在使用stty -echo关闭脚本显示之后，如果发生致命错误，脚本将终止，而且不会恢复终端输出，这样对用户来说是没有意义的。可以使用trap来捕捉SIGINT和其他操作系统级别的信号，然后使用stty echo打开终端显示：
+
+#!/bin/sh
+error_handle() {
+  stty echo;
+}
+if [ ${#@} -ne 0 ] && [ "${@#"--silent"}" = "" ]; then
+  stty -echo;
+  trap error_handle INT;
+  trap error_handle TERM;
+  trap error_handle KILL;
+  trap error_handle EXIT;
+fi;
+# ...
+
+
+用动画的方式显示进度
+有些命令需要运行很长时间，并非所有脚本都提供了进度条。在用户等待异步任务完成时，可以通过一些方式告诉他们脚本仍在运行。比如在while循环中打印一些信息：
+
+#!/bin/sh
+printf -- 'Performing asynchronous action..';
+./trigger-action;
+DONE=0;
+while [ $DONE -eq 0 ]; do
+  ./async-checker;
+  if [ "$?" = "0" ]; then DONE=1; fi;
+  printf -- '.';
+  sleep 1;
+done;
+printf -- ' DONE!\n';
+
+用颜色编码输出
+在脚本中调用其他二进制文件或脚本时，对它们的输出进行颜色编码，这样就可以知道哪个输出来自哪个脚本或二进制文件。这样我们就不需要在满屏的黑白输出文本中查找想要的输出结果。
+
+理想情况下，脚本应该输出白色（默认的，前台进程），子进程应该使用灰色（通常不需要，除非出现错误），使用绿色表示成功，红色表示失败，黄色表示警告。
+
+#!/bin/sh
+printf -- 'doing something... \n';
+printf -- '\033[37m someone else's output \033[0m\n';
+printf -- '\033[32m SUCCESS: yay \033[0m\n';
+printf -- '\033[33m WARNING: hmm \033[0m\n';
+printf -- '\033[31m ERROR: fubar \033[0m\n';
+可以使用\033[Xm，其中X代表颜色代码。有些脚本使用\e而不是\033，但要注意\e不适用于所有的 UNIX 系统。
+
+
+set -e表示从当前位置开始，如果出现任何错误都将触发EXIT。相反，set +e表示不管出现任何错误继续执行脚本。
+
+如果脚本是有状态的（每个后续步骤都依赖前一个步骤），那么请使用set -e，在脚本出现错误时立即退出脚本。如果要求所有命令都要执行完（很少会这样），那么就使用set +e。
+
+#!/bin/sh
+set +e;
+./script-1;
+./script-2; # does not depend on ./script-1
+./script-3; # does not depend on ./script-2
+set -e;
+./script-4;
+./script-5; # depends on success of ./script-4
+# ...
+自己执行清理工作
+大多数脚本在出现错误时不会执行清理工作，能够做好这方面工作的脚本实属罕见，但这样做其实很有用，还可以省下不少时间。前面已经给出过示例，让stty恢复正常，并借助trap命令来执行清理工作：
+
+#!/bin/sh
+handle_exit_code() {
+  ERROR_CODE="$?";
+  printf -- "an error occurred. cleaning up now... ";
+  # ... cleanup code ...
+  printf -- "DONE.\nExiting with error code ${ERROR_CODE}.\n";
+  exit ${ERROR_CODE};
+}
+trap "handle_exit_code" EXIT;
+# ... actual script...
+在退出时使用不同的错误码
+在绝大多数 shell 脚本中，exit 0 表示执行成功，exit 1 表示发生错误。对错误与错误码进行一对一的映射，这样有助于脚本调试。
+
+#!/bin/sh
+# ...
+if [ "$?" != "0" ]; then
+  printf -- 'X happened. Exiting with status code 1.\n';
+  exit 1;
+fi;
+# ...
+if [ "$?" != "0" ]; then
+  printf -- 'Y happened. Exiting with status code 2.\n';
+  exit 2;
+fi;
+这样做有另一个额外的好处，就是其他脚本在调用你的脚本时，可以根据错误码来判断发生了什么错误。
+
+在结束时打印一个新行
+如果你有在遵循脚本的最佳实践，那么可能会使用printf代替echo（它在不同系统中的行为有所差别）。问题是printf在命令结束后不会自动添加一个新行，导致控制台看起来是这样的：
+
+
+看起来是多么的平淡
+
+这样一点也不酷，可以通过简单的方式打印一个新行：
+
+#!/bin/sh
+# ... your awesome script ...
+printf -- '\n';
+exit 0;
+这样就可以得到：
+
+
+好多了哈
+
+别人会感谢你这么做的。
+

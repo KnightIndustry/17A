@@ -1,0 +1,51 @@
+How to reset the list of trusted CA certificates in RHEL 6 & RHEL 7
+ SOLUTION VERIFIED - Updated July 23 2018 at 4:48 PM - English 
+Environment
+Red Hat Enterprise Linux 6
+Red Hat Enterprise Linux 7
+Issue
+How can I reset the system-wide list of trusted CA certs on a RHEL 6 or RHEL 7 system?
+Resolution
+It's simple for a process with root access to add new Certificate Authority (CA) certs to the system-wide database of trusted CAs. Many applications--both 3rd-party and shipped in RHEL--read CA certs from this database. (To name a few: lftp, curl, wget, openssl, firefox.)
+
+Follow these steps to ensure the database contains only the default CAs.
+
+Create a backup directory to store any found certs for later inspection
+
+~]# mkdir -p /root/cert.bak
+mkdir: created directory ‘/root/cert.bak’
+Reset and update the ca-certificates package
+This will revert away any direct customizations (e.g., to ca-bundle.crt) and update or reinstall the package
+
+~]# rpm -Vv ca-certificates | awk '$1!="........." && $2!="d" {system("mv -v " $NF " /root/cert.bak")}'
+`/etc/pki/java/cacerts' -> `/root/cert.bak/cacerts'
+`/etc/pki/tls/certs/ca-bundle.crt' -> `/root/cert.bak/ca-bundle.crt'
+`/etc/pki/tls/certs/ca-bundle.trust.crt' -> `/root/cert.bak/ca-bundle.trust.crt'
+~]# yum check-update ca-certificates; (($?==100)) && yum update ca-certificates || yum reinstall ca-certificates
+Ensure the /etc/pki/ca-trust/source/ and /etc/pki/ca-trust/source/anchors/ directories together contain only the following 2 files
+Move any other files to the backup directory
+
+~]# find /etc/pki/ca-trust/source{,/anchors} -maxdepth 1 -not -type d -exec ls -1 {} +
+/etc/pki/ca-trust/source/ca-bundle.legacy.crt
+/etc/pki/ca-trust/source/README
+Ensure the /usr/share/pki/ca-trust-source/ and /usr/share/pki/ca-trust-source/ directories together contain no more than the following 4 files (though RHEL 7.4+ will contain only 2 of them)
+Move any other files to the backup directory
+
+~]# find /usr/share/pki/ca-trust-source{,/anchors} -maxdepth 1 -not -type d -exec ls -1 {} +
+/usr/share/pki/ca-trust-source/ca-bundle.neutral-trust.crt
+/usr/share/pki/ca-trust-source/ca-bundle.supplement.p11-kit
+/usr/share/pki/ca-trust-source/ca-bundle.trust.crt
+/usr/share/pki/ca-trust-source/README
+Rebuild the CA-trust database with update-ca-trust
+
+Execute:   update-ca-trust extract
+
+RHEL 6: the following warning will very likely be seen
+
+update-ca-trust: Warning: The dynamic CA configuration feature is in the disabled state
+This is normal (default), expected, and not a problem
+Optionally read more about this in the update-ca-trust man page
+
+Note that some applications (like Firefox), keep their own local cert database
+
+See also: Firefox: How to audit & reset the list of trusted servers/CAs

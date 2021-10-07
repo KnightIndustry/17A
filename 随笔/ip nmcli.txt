@@ -1,0 +1,58 @@
+ip nmcli
+
+即时修改ip
+ip addr add 172.10.51.2/24 dev eth0
+ip route add default via 172.10.51.1  dev eth0 
+
+修改默认路由
+ip	route	add		default	via	172.16.51.1	dev	eth0
+ip	route	replace	default via	172.16.51.1	dev	eth0
+
+修改静态路由
+	net-tools
+route	add	-net	172.16.51.0/24	gw	172.16.51.1	dev	eth0
+route	del	-net	172.16.51.0/24
+
+	iproute2
+ip	route	add	172.16.51.0/24	via	172.16.51.1	dev	eth0
+ip	route	del	172.16.51.0/24
+
+
+ip link set eth0 up
+
+nmcli connection modify eth0 ipv4.method manual ipv4.addresses 172.10.51.2/24 ipv4.gateway 172.10.51.1 ipv4.dns 119.29.29.29  +ipv4.dns 119.29.29.29
+nmcli con mod eth0 connection.autoconnect no
+nmcli c m eth0 ipv4.method manual
+
+nmtui edit eth0
+
+
+
+
+ss - another utility to investigate sockets
+
+直接执行 ss 会列出当前所有已建立的非监听的（non-listening）连接，一个常用的参数 -ntl，参数意义为：
+
+-n –numeric，显示端口数字而不是服务名字，比如显示 80 而不是 http
+-t –tcp， 即显示 tcp 套接字，同理常用 -u 表示 udo 套接字
+-l –listening，也好理解，默认不显示监听的套接字，这个参数指明只显示监听中的套接字
+-4 –ipv4也是常用的，在查看服务监听状态时，常指定 -4 或者 -6 结果更加清晰
+-p –processes,显示使用这个套接字的进程id，这个参数需要 sudo 权限
+-s –summary，显示套接字使用的统计信息
+-o –options，显示相关的时间信息
+连接的状态有很多中，常用如下：
+
+established
+syn-sent
+syn-recv
+time-wait
+closed
+closing
+all
+connected
+还可以通过指定dport和sport过滤输出：
+
+# 还可以使用 or，666
+ss -nt dst :443 or dst :80
+// dport 大于1024的连接
+ss -nt dst gt :1024

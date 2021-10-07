@@ -1,0 +1,13 @@
+tar xf ../playground2.tar --wildcards 'home/me/playground/dir-\*/file-A'
+
+find playground -name 'file-A' -exec tar rf playground.tar '{}' '+'
+		这里我们使用 find 命令来匹配 playground 目录中所有名为 file-A 的文件，然后使用-exec 行为，来 唤醒带有追加模式（r）的 tar 命令，把匹配的文件添加到归档文件 playground.tar 里面。
+		使用 tar 和 find 命令，来创建逐渐增加的目录树或者整个系统的备份，是个不错的方法。通过 find 命令匹配新于某个时间戳的文件，我们就能够创建一个归档文件，其只包含新于上一个 tar 包的文件， 假定这个时间戳文件恰好在每个归档文件创建之后被更新了。
+
+
+find playground -name 'file-A' | tar cf - --files-from=-  | gzip > playground.tgz
+
+
+for i in 42.51.172.{10..200};do ping -c1 $i > /dev/null&& echo "$i on" ||echo "$i off";done
+
+

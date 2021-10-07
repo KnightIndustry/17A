@@ -1,0 +1,36 @@
+#vim 自动添加注销信息，添加到 /etc/vimrc  ~/.vimrc
+
+
+autocmd BufNewFile *.sh,*.py exec ":call Setcomment()"
+
+func Setcomment()
+
+if &filetype == 'sh'
+        call append(0,"#!/bin/env bash")
+        call append(1,"")
+        call append(2,"#*********************************** ")
+        call append(3,"#ScriptName: ".expand("%"))
+        call append(4,"#Author:     jwx525644")
+        call append(5,"#Version:    v1.0 ")
+        call append(6,"#CreateTime: ".strftime("%Y/%m/%d"))
+        call append(7,"#*********************************** ")
+        call append(8,"")
+else
+        call append(0,"#!/bin/env python3")
+        call append(1,"")
+        call append(2,"#*********************************** ")
+        call append(3,"#ScriptName: ".expand("%"))
+        call append(4,"#Author:     jwx525644")
+        call append(5,"#Version:    v1.0 ")
+        call append(6,"#CreateTime: ".strftime("%Y/%m/%d"))
+        call append(7,"#*********************************** ")
+        call append(8,"")
+endif
+
+endfunc
+
+
+开关自动缩进，粘贴时有帮助
+set autoindent
+set noautoindent
+

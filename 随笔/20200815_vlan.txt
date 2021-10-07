@@ -1,0 +1,28 @@
+nmcli con add type vlan ifname VLAN10 dev eth0 id 10
+
+nmcli con add type vlan \
+              ifname VLAN10 \
+			  dev eth0 id 10 \
+			  ip4 10.10.10.10/24 \
+			  gw4 10.10.10.254
+			  
+			  
+VLAN 命令的其他选项，请查看 nmcli(1) man pag 的 VLAN 部分。在 man page 中，创建该 VLAN 的设备是作为上级设备使用。在上述示例中是使用其接口名称 eth0 指定该设备，也可以使用连接 UUID 或者 MAC 地址指定。
+
+
+7.4.2. 使用 ip 命令配置 802.1Q VLAN 标记
+要在以太网接口 eth0 中创建名为 VLAN8、ID 为 8 的 802.1Q VLAN 接口，请作为 root 运行以下命令：
+~]# ip link add link eth0 name eth0.8 type vlan id 8
+请运行以下命令查看 VLAN：
+~]$ ip -d link show eth0.8
+4: eth0.8@eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT
+     link/ether 52:54:00:ce:5f:6c brd ff:ff:ff:ff:ff:ff promiscuity 0
+     vlan protocol 802.1Q id 8 <REORDER_HDR>
+	 
+	 
+	 
+
+
+
+
+

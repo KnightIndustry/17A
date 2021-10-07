@@ -1,0 +1,13 @@
+/usr/local/tomcat/logs/catalina.out 
+/opt/module/apache-tomcat-*/logs/catalina.out 
+{
+    copytruncate
+    daily
+    rotate 4
+    notifempty
+    missingok
+    dateext
+    dateyesterday
+    compress
+    minsize 500M
+}

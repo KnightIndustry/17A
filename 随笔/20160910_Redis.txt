@@ -1,0 +1,59 @@
+安装
+make PREFIX=/usr/local/redis install
+
+
+内核优化
+net.core.somaxconn = 2048
+vm.overcommit_memory = 1 
+vm.swappiness=1
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_tw_recycle = 1
+net.ipv4.ip_local_port_range = 1024 65000
+
+echo never > /sys/kernel/mm/transparent_hugepage/enabled  关闭巨页内存，写入 /etc/rc.local 开机启动
+
+配置优化
+
+ rename-command CONFIG ""
+ rename-command FLUSHALL ""
+ rename-command FLUSHDB ""
+ rename-command EVAL ""
+ 
+ 关闭相关命令，提高安全性
+
+原生支持Master-Slave
+过期机制
+被动过期——client访问key时，判断过期时间选择是否过期
+主动过期——默认使用valatile-lru
+
+volatile-lru：从已设置过期时间的数据集中挑选最近最少使用的数据淘汰
+volatile-ttl：从已设置过期时间的数据集中挑选将要过期的数据淘汰
+volatile-random：从已设置过期时间的数据集中任意选择数据淘汰
+allkeys-lru：从全部数据集中挑选最近最少使用的数据淘汰
+allkeys-random：从全部数据集中任意选择数据淘汰no-enviction（驱逐）：禁止驱逐数据
+
+
+
+这里就有一个问题，比如在用redis的时候，刚开始只开启RDB的持久方式，AOF没有开启，在跑一段时间之后想开启AOF，那如何把RDB的数据直接写到AOF文件呢？有2种方法：
+①: 在开启AOF之前，先执行bgrewriteaof，再重启。
+
+auto-aof-rewrite-percentage
+
+
+redis-cli  客户端命令
+config get *								#获取所有配置
+config get timeout							#获取timeout配置
+config set timeout 300						#配置timeout
+
+
+config rewrite								#配置写入文件
+
+
+hkeys key field 	Returns all field names in the hash stored at key
+		HKEYS myhash
+
+hget  key filed     Returns the value associated with field in the hash stored at key
+		HGET myhash field2
+		
+hvals key  Returns all values in the hash stored at key
+		HVALS myhash

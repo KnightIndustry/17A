@@ -1,0 +1,22 @@
+签名 证书
+
+创建私钥和证书
+openssl req -new -x509 -newkey rsa:4096 -keyout client.key -out client.crt
+
+
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privateKey.key -out certificate.crt -reqexts v3_req -extensions v3_ca
+
+根证书
+mkdir -p /etc/pki/CA/{certs,newcerts,crl,private}
+cd /etc/pki/CA
+Touch index.txt
+echo "01" > serial
+	
+ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt -subj "/C=CN/ST=ShenZhen/L=ShenZhen/O=Example Inc./OU=Web Security/CN=example.com"
+
+openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+
+证书合并
+cat mydomain.crt COMODORSADomainValidationSecureServerCA.crt COMODORSAAddTrustCA.crt > mydomain_ssl.crt
+GeoTrust证书
+

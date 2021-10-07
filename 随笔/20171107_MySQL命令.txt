@@ -1,0 +1,9 @@
+MySQL 命令
+
+
+
+mysqldump -hhostname -uusername -ppassword databasename | gzip > backupfile.sql.gz
+1
+mysqldump -hhostname -uusername -ppassword databasename | gzip > backupfile.sql.gz
+
+innobackupex --defaults-file=/etc/my.cnf  --host=42.51.152.52 --port=5480 --user=root --password=u4M2Nj5N --compress /data/backup

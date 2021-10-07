@@ -1,0 +1,8 @@
+mysql_config_editor set --login-path=wlw2.0 --host=192.168.23.110 -S /tmp/mysql.sock -u root --password
+
+
+
+
+
+mysqldump --single-transaction --master-data=2 --routines --set-gtid-purged=off --all-databases >/data01/backup/allbak.sql
+

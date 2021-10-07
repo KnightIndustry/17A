@@ -1,0 +1,8 @@
+本地转发
+
+#访问本机的8080端口转发到本地的80端口
+iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 6080
+
+将80端口的流量转发至8080
+firewall-cmd --add-forward-port=port=80:proto=tcp:toport=6080
+
