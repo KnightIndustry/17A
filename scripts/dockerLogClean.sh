@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#0 2 * * * sh /home/sh/tomcatLogClean.sh
+
 
 echo "======== docker containers logs file size ========"
 logs=$(find /var/lib/docker/containers/ -name *-json.log)
